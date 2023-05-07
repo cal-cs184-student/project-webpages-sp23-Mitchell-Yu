@@ -2,6 +2,433 @@
 	<head>
 	</head>
 	<body>
-		Project 4 here
+		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Mitchell Yu, CS184-aby</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In this project, I implemented cloth physics and shaders. Cloth physics involved arranging weights and springs, moving said weights accordingly, and handling collisions appropriately. Shaders involved calculating vectors relative to the camera, model, and light, modifying vertices, and determining how the result would translate into a color. I think most of the project was interesting, actually. Cloth physics are satisfying to implement and amusing to test. Shaders are more complicated, but they are still interesting to do. I may have failed to do anything in this class in a timely fashion, but I am at least glad to concluded the class having felt like I have learned something.</p>
+
+<h2 align="middle">Part 1</h2>
+<p>The following images of scene/pinned2.json show the cloth as a whole, as well as closer shots of the structure of point masses and springs.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P1/web1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Front</figcaption>
+      </td>
+      <td>
+        <img src="P1/web2.png" align="middle" width="500px"/>
+        <figcaption align="middle">Back</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="P1/web3.png" align="middle" width="500"/>
+        <figcaption align="middle">Catenary close-up</figcaption>
+      </td>
+      <td>
+        <img src="P1/web4.png" align="middle" width="500"/>
+        <figcaption align="middle">Pinned close-up</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<br>
+<p>The following images depict the wireframe (1) without any shearing constraints, (2) with only shearing constraints, and (3) with all constraints:</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P1/image2.png" align="middle" width="800px"/>
+        <figcaption align="middle">Structural and bending</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="P1/image1.png" align="middle" width="800px"/>
+        <figcaption align="middle">Shearing only</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="P1/image3.png" align="middle" width="800px"/>
+        <figcaption align="middle">Structural, shearing, and bending</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Part 2</h2>
+<p>With a low spring constant, the cloth feels like a thin but weighty elastic. The cloth is loose as it falls, and the fine folds appear as the cloth settles. With a high spring constant, the cloth is so tightly wound that the spring patterns are visibly affecting the fabric. The cloth is pulling against itself so intensely, it looks as though there were winds in the simulation.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P2/sheet6.png" align="middle" width="500px"/>
+        <figcaption align="middle">Spring constant 50</figcaption>
+      </td>
+      <td>
+        <img src="P2/sheet5.png" align="middle" width="500px"/>
+        <figcaption align="middle">Spring contant 300000</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>A density of one doesn't make any significant changes to the fabric. The dip at the top is shallower, though, and it seemed to ripple less as it fell. A density of 10,000,000 gives the cloth enough weight that the bottom of the cloth has a curvve to it as well. The curve at the top of the cloth was smooth at the time of my screenshot, but later implementation of self-collision results in a cloth with ripples at the top that never stop jostling about.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P2/sheet4.png" align="middle" width="500px"/>
+        <figcaption align="middle">Density 1</figcaption>
+      </td>
+      <td>
+        <img src="P2/sheet3.png" align="middle" width="500px"/>
+        <figcaption align="middle">Density at least 10,000,000; the number is cut off in the screenshot, and subsequent implementations mean I can no longer replicate the original image with my current code.</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>Damping of zero results in a cloth that freely swings back and forth for a while, with so much rippling the cloth may well be woven of water and flown in a hurricane. A damping of one, on the other hand, slows the cloth so much it gently lands at its resting spot, with no visible swinging past that point.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P2/sheet2.png" align="middle" width="500px"/>
+        <figcaption align="middle">Damping 0</figcaption>
+      </td>
+      <td>
+        <img src="P2/sheet1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Damping 1</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P2/pinned4a.png" align="middle" width="800px"/>
+        <figcaption align="middle">Final resting state of pinned4.json with default parameters</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Part 3</h2>
+<p>The spring constant indicates the amount of force necessary to affect a spring's length. In the context of this cloth simulation, the spring constant indicates the amount of force necessary to warp the fabric from its rectangular state. This is demonstrated with the results of varying the spring constant of a simulated cloth as it falls onto a sphere. The cloth with lowest spring constant conforms most closely with the sphere and the downward pull of gravity, while the cloth with highest spring constant appears more dented by a sphere than draped over one. The cloth with default settings, pictured in the middle, is affected by gravity and the sphere but still shows some resistance to deformation.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P3/fall1.png" align="middle" width="300px"/>
+        <figcaption align="middle">Spring constant 500</figcaption>
+      </td>
+      <td>
+        <img src="P3/fall2.png" align="middle" width="300px"/>
+        <figcaption align="middle">Spring constant 5000</figcaption>
+      </td>
+      <td>
+        <img src="P3/fall3.png" align="middle" width="300px"/>
+        <figcaption align="middle">Spring constant 50000</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Part 4</h2>
+<p>The following documents self-collision of a cloth with default parameters.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P4/Hold9.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 1</figcaption>
+      </td>
+      <td>
+        <img src="P4/Hold8.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 2</figcaption>
+      </td>
+      <td>
+        <img src="P4/Hold7.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 3</figcaption>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="P4/Hold6.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 4</figcaption>
+      </td>
+      <td>
+        <img src="P4/Hold5.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 5</figcaption>
+      </td>
+      <td>
+        <img src="P4/Hold4.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 6</figcaption>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="P4/Hold3.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 7</figcaption>
+      </td>
+      <td>
+        <img src="P4/Hold2.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 8</figcaption>
+      </td>
+      <td>
+        <img src="P4/Hold1.png" align="middle" width="300px"/>
+        <figcaption align="middle">Default 9</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p>The following documents self-collision of a cloth with density of one. It ripples on first impact like before, but it folds in larger, cleaner folds, as though a mesh of metal wiring. </p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P4/Fold1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Low Density 1</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p>The following documents self-collision of a cloth with density set to 150. This one crumbles the moment it hits the surface, swallowing the fabric as it falls.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P4/Flop3.png" align="middle" width="300px"/>
+        <figcaption align="middle">High Density 1</figcaption>
+      </td>
+      <td>
+        <img src="P4/Flop2.png" align="middle" width="300px"/>
+        <figcaption align="middle">High Density 2</figcaption>
+      </td>
+      <td>
+        <img src="P4/Flop1.png" align="middle" width="300px"/>
+        <figcaption align="middle">High Density 3</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p>The following documents self-collision of a cloth with a spring constant of 5. Even more so than the last one, it sucks in the edges of the cloth as it approaches the entanglement of threading.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P4/Drop3.png" align="middle" width="300px"/>
+        <figcaption align="middle">Low Spring Constant 1</figcaption>
+      </td>
+      <td>
+        <img src="P4/Drop2.png" align="middle" width="300px"/>
+        <figcaption align="middle">Low Spring Constant 2</figcaption>
+      </td>
+      <td>
+        <img src="P4/Drop1.png" align="middle" width="300px"/>
+        <figcaption align="middle">Low Spring Constant 3</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p>The following documents self-collision of a cloth with the spring constant set to 350000. Like in pinned2.json, the tension of the springs produce a lattice patterning. Unconstrained by pins, the fabric rolls about the surface as it slowly settles downward. Even so, it continues to roll like waves across a beach.</p>
+<div align="middle">
+  <table style="width=100%">
+      <tr>
+        <td>
+          <img src="P4/Zhop8.png" align="middle" width="400px"/>
+          <figcaption align="middle">High Spring Constant 1</figcaption>
+        </td>
+        <td>
+          <img src="P4/Zhop7.png" align="middle" width="400px"/>
+          <figcaption align="middle">High Spring Constant 2</figcaption>
+        </td>
+        </tr>
+      <tr>
+        <td>
+          <img src="P4/Zhop6.png" align="middle" width="400px"/>
+          <figcaption align="middle">High Spring Constant 3</figcaption>
+        </td>
+        <td>
+          <img src="P4/Zhop5.png" align="middle" width="400px"/>
+          <figcaption align="middle">High Spring Constant 4</figcaption>
+        </td>
+    </tr>
+      <tr>
+        <td>
+          <img src="P4/Zhop4.png" align="middle" width="400px"/>
+          <figcaption align="middle">High Spring Constant 5</figcaption>
+        </td>
+        <td>
+          <img src="P4/Zhop3.png" align="middle" width="400px"/>
+          <figcaption align="middle">High Spring Constant 6</figcaption>
+        </td>
+      </tr>
+    <tr>
+      <td>
+        <img src="P4/Zhop2.png" align="middle" width="400px"/>
+        <figcaption align="middle">High Spring Constant 7</figcaption>
+      </td>
+      <td>
+        <img src="P4/Zhop1.png" align="middle" width="400px"/>
+        <figcaption align="middle">High Spring Constant 8</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Part 5</h2>
+<p>A shader program is an algorithm to determine how to texture and color a three-dimensional object. They can be used to create reasonably convincing shadowing, reflection, or other effects while remaining relatively light in terms of processing. A vertex shader modifies the positions of vertices of an object and returns the new position and other values to the fragment shader. The fragment shader computes what colors a fragment should display based on the information input by vertex shaders. The vertex shaders affect an objects texture, and the fragment shader determines the colors.</p>
+<p>The Blinn-Phong shading model is a reflection shading algorithm that takes into account specular highlights, diffuse reflection, and ambient lighting when determining its coloration.</p>
+<div align="middle">
+  <table style="width=100%">
+      <tr>
+        <td>
+          <img src="P5/ambient.png" align="middle" width="400px"/>
+          <figcaption align="middle">Ambient Only</figcaption>
+        </td>
+        <td>
+          <img src="P5/diffuse.png" align="middle" width="400px"/>
+          <figcaption align="middle">Diffuse Only</figcaption>
+        </td>
+        </tr>
+      <tr>
+        <td>
+          <img src="P5/specular.png" align="middle" width="400px"/>
+          <figcaption align="middle">Specular Only</figcaption>
+        </td>
+        <td>
+          <img src="P5/full.png" align="middle" width="400px"/>
+          <figcaption align="middle">Full Model</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+<p>Custom water texture, though the watery origins are somewhat unclear in practice.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P5/water1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Water sphere</figcaption>
+      </td>
+      <td>
+        <img src="P5/water2.png" align="middle" width="500px"/>
+        <figcaption align="middle">Water fabric</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p>The bump map has a coarser, less refined look to it, whereas the displacement map has more of a natural, textured look. There was no discernable difference when I made the change to the sphere mesh's coarseness. I assume I missed a normalization or something somewhere, since I had to heavily modify the normal and height values to get the varying shaders into a comparable state.</p>
+<div align="middle">
+  <table style="width=100%">
+      <tr>
+        <td>
+          <img src="P5/bumpa.png" align="middle" width="400px"/>
+          <figcaption align="middle">Bump Sphere</figcaption>
+        </td>
+        <td>
+          <img src="P5/bumpb.png" align="middle" width="400px"/>
+          <figcaption align="middle">Bump Cloth</figcaption>
+        </td>
+        </tr>
+      <tr>
+        <td>
+          <img src="P5/displacementb.png" align="middle" width="400px"/>
+          <figcaption align="middle">Displacement Sphere</figcaption>
+        </td>
+        <td>
+          <img src="P5/displacementa.png" align="middle" width="400px"/>
+          <figcaption align="middle">Displacement Cloth</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="P5/16x16a.png" align="middle" width="400px"/>
+          <figcaption align="middle">16 sphere</figcaption>
+        </td>
+        <td>
+          <img src="P5/16x16b.png" align="middle" width="400px"/>
+          <figcaption align="middle">16 cloth</figcaption>
+        </td>
+        </tr>
+      <tr>
+        <td>
+          <img src="P5/128x128a.png" align="middle" width="400px"/>
+          <figcaption align="middle">128 sphere</figcaption>
+        </td>
+        <td>
+          <img src="P5/128x128b.png" align="middle" width="400px"/>
+          <figcaption align="middle">128 cloth</figcaption>
+        </td>
+      </tr>
+    </table>
+</div>
+<p>Mirroring surfaces</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="P5/shiny1.png" align="middle" width="300px"/>
+        <figcaption align="middle">Mirror Orb</figcaption>
+      </td>
+      <td>
+        <img src="P5/shiny2.png" align="middle" width="300px"/>
+        <figcaption align="middle">Mirror Fabric</figcaption>
+      </td>
+      <td>
+        <img src="P5/shiny3.png" align="middle" width="300px"/>
+        <figcaption align="middle">Mirror Orb and Fabric</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p>I unfortunately did not make a custom shader.</p>
+
+<h2 align="middle">Part 6</h2>
+<p>I unfortunately did not implement any additional technical features for the cloth simulation.</p>
+
+</body>
+</html>
+
 	</body>
 </html>
